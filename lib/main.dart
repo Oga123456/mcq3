@@ -1,4 +1,4 @@
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -12,18 +12,20 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Medical MCQ Quiz',
-      home: const QuizWebView(),
+      home: QuizWebView(),
     );
   }
 }
 
 class QuizWebView extends StatefulWidget {
   const QuizWebView({super.key});
+
   @override
   State<QuizWebView> createState() => _QuizWebViewState();
 }
@@ -34,24 +36,27 @@ class _QuizWebViewState extends State<QuizWebView> {
   @override
   void initState() {
     super.initState();
+
     _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted);
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.transparent);
+
     _loadLocalHtml();
   }
 
   Future<void> _loadLocalHtml() async {
-    String fileHtmlContents = await rootBundle.loadString('assets/index.html');
-    _controller.loadHtmlString(fileHtmlContents, baseUrl: 'assets/');
+    String htmlContent = await rootBundle.loadString('assets/index.html');
+    final String contentBase64 =
+        base64Encode(const Utf8Encoder().convert(htmlContent));
+    await _controller.loadRequest(
+      Uri.parse('data:text/html;base64,$contentBase64'),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: WebViewWidget(controller: _controller),
-      ),
+      body: WebViewWidget(controller: _controller),
     );
   }
 }
