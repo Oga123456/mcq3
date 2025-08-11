@@ -1,0 +1,71 @@
+workflows:
+  release-workflow:
+    name: Build APK with all assets
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    scripts:
+      - name: Post-clone – Prepare project & download assets
+        script: |
+          #!/bin/sh
+          set -e
+          set -x
+
+          # Create missing Android folder
+          flutter create .
+
+          # Create assets folders
+          mkdir -p assets/fonts
+
+          # Download Tailwind CSS
+          curl -L https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css -o assets/tailwind.min.css
+
+          # Create inter-font.css
+          cat <<EOT > assets/inter-font.css
+          @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 400;
+            src: url('fonts/Inter-Regular.woff2') format('woff2');
+          }
+          @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 500;
+            src: url('fonts/Inter-Medium.woff2') format('woff2');
+          }
+          @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 600;
+            src: url('fonts/Inter-SemiBold.woff2') format('woff2');
+          }
+          @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 700;
+            src: url('fonts/Inter-Bold.woff2') format('woff2');
+          }
+          EOT
+
+          # Download font files
+          curl -L https://rsms.me/inter/font-files/Inter-Regular.woff2 -o assets/fonts/Inter-Regular.woff2
+          curl -L https://rsms.me/inter/font-files/Inter-Medium.woff2 -o assets/fonts/Inter-Medium.woff2
+          curl -L https://rsms.me/inter/font-files/Inter-SemiBold.woff2 -o assets/fonts/Inter-SemiBold.woff2
+          curl -L https://rsms.me/inter/font-files/Inter-Bold.woff2 -o assets/fonts/Inter-Bold.woff2
+
+          # Download MCQ data & HTML if missing
+          if [ ! -f assets/MCQ-Data.json ]; then
+            curl -L https://raw.githubusercontent.com/Oga123456/mcq2/main/assets/MCQ-Data.json -o assets/MCQ-Data.json
+          fi
+          if [ ! -f assets/index.html ]; then
+            curl -L https://raw.githubusercontent.com/Oga123456/mcq2/main/assets/index.html -o assets/index.html
+          fi
+
+          flutter pub get
+
+      - name: Build release APK
+        script: flutter build apk --release
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
