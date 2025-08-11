@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MCQ Quiz — Modern</title>
+<style>
+  :root{
+    --bg1:#06b6d4; /* teal */
+    --bg2:#8b5cf6; /* purple */
+    --card:#ffffff;
+    --muted:#6b7280;
+    --accent:#10b981; /* green for correct */
+    --danger:#ef4444; /* red for wrong */
+    --glass: rgba(255,255,255,0.08);
+  }
+  /* Dark mode overrides */
+  [data-theme="dark"]{
+    --card:#0b1220;
+    --muted:#9ca3af;
+    --glass: rgba(255,255,255,0.03);
+    background: linear-gradient(135deg,#081226 0%, #1f1840 100%);
+  }
+
+  html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+  body{
+    background: linear-gradient(135deg,var(--bg1),var(--bg2));
+    display:flex;align-items:center;justify-content:center;padding:18px;
+  }
+  .app {
+    width:100%;
+    max-width:920px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.95));
+    border-radius:18px;
+    box-shadow:0 12px 40px rgba(6,10,23,0.35);
+    overflow:hidden;
+    backdrop-filter: blur(6px);
+  }
+  [data-theme="dark"] .app{
+    background: linear-gradient(180deg, rgba(8,10,20,0.6), rgba(8,10,20,0.7));
+  }
+
+  header.app-header{
+    padding:22px 24px; display:flex;align-items:center;justify-content:space-between;
+  }
+  .brand { display:flex; gap:12px; align-items:center; }
+  .logo {
+    width:56px; height:56px; border-radius:12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;
+    box-shadow: 0 6px 18px rgba(12,20,70,0.12);
+  }
+  .brand h1{ margin:0;font-size:18px; color:#061024; }
+  [data-theme="dark"] .brand h1{ color:#fff; }
+  .controls { display:flex; gap:10px; align-items:center; }
+
+  main {
+    padding:18px;
+  }
+
+  /* Menu & chapter list */
+  .menu-grid{ display:grid; gap:12px; grid-template-columns: 1fr; }
+  .section-btn, .chapter-btn {
+    background:var(--card); border-radius:12px; padding:14px; border:1px solid rgba(0,0,0,0.04);
+    font-weight:600;color:#0f172a; cursor:pointer; text-align:left;
+    box-shadow: 0 6px 14px rgba(6,10,23,0.06);
+  }
+  [data-theme="dark"] .section-btn, [data-theme="dark"] .chapter-btn {
+    color:#e6eefc; border:1px solid rgba(255,255,255,0.04);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  }
+
+  /* Quiz card */
+  .card{
+    background: var(--card);
+    border-radius:14px;
+    padding:18px;
+    box-shadow: 0 8px 24px rgba(6,10,23,0.08);
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+  [data-theme="dark"] .card{
+    background: #071226; border: 1px solid rgba(255,255,255,0.03);
+  }
+  .progress-wrap{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .progress{flex:1;height:12px;background:var(--glass);border-radius:999px;overflow:hidden}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent), #06b6d4); width:0%; transition: width 400ms ease;}
+  .progress-text{min-width:72px;text-align:right;color:var(--muted);font-weight:600}
+
+  .question{font-size:20px;font-weight:600;margin:10px 0 16px;color:#0b1220}
+  [data-theme="dark"] .question{ color:#e6eefc; }
+
+  .choices{display:grid;gap:10px;grid-template-columns:1fr 1fr;}
+  @media(max-width:640px){ .choices{grid-template-columns:1fr;} }
+
+  .choice {
+    padding:14px;border-radius:12px;background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01));
+    cursor:pointer;border:1px solid rgba(0,0,0,0.04); font-weight:600;
+  }
+  .choice.disabled{ opacity:0.6; cursor:not-allowed; }
+  .choice.correct{ background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.28); color:var(--accent); }
+  .choice.wrong{ background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.28); color:var(--danger); }
+
+  .footer-actions{ display:flex; gap:8px; margin-top:16px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+  .btn { padding:10px 14px; border-radius:10px; background:transparent; border:1px solid rgba(0,0,0,0.06); cursor:pointer; font-weight:700;}
+  .btn.primary{ background:linear-gradient(90deg,var(--bg1),var(--bg2)); color:#fff; border:none; box-shadow: 0 10px 24px rgba(13,20,60,0.12);}
+  .small { font-size:13px; padding:8px 10px; border-radius:8px; }
+
+  /* Score screen */
+  .score-big{ font-size:36px; font-weight:800; color:var(--accent); }
+
+  /* Review list */
+  .review-item{ margin:8px 0;padding:12px;border-radius:10px;background:var(--glass); display:flex;gap:12px; align-items:flex-start; }
+  .muted{ color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body data-theme="light">
+  <div class="app" role="application" aria-label="MCQ Quiz App">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo">MCQ</div>
+        <div>
+          <h1>MCQ Quiz</h1>
+          <div class="muted">Medical practice quizzes — redesigned</div>
+        </div>
+      </div>
+      <div class="controls">
+        <label title="Dark mode" style="display:flex;align-items:center;gap:8px;">
+          <input id="theme-toggle" type="checkbox" aria-label="Toggle dark mode">
+          <span class="muted small">Dark</span>
+        </label>
+        <button id="home-btn" class="btn small">Home</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- MAIN MENU -->
+      <section id="menu-screen">
+        <div style="padding:8px; margin-bottom:14px;">
+          <div class="muted">Select a section and chapter</div>
+        </div>
+        <div class="menu-grid" id="sections-list"></div>
+      </section>
+
+      <!-- CHAPTER LIST -->
+      <section id="chapters-screen" style="display:none;">
+        <div style="margin-bottom:12px;">
+          <div class="muted" id="section-title">Section</div>
+        </div>
+        <div id="chapters-list" class="menu-grid"></div>
+      </section>
+
+      <!-- QUIZ -->
+      <section id="quiz-screen" style="display:none;">
+        <div class="card">
+          <div class="progress-wrap">
+            <div style="min-width:160px;font-weight:700;color:var(--muted)">Chapter: <span id="chapter-name"></span></div>
+            <div class="progress" aria-hidden="true"><i id="progress-bar"></i></div>
+            <div class="progress-text" id="progress-text">0%</div>
+          </div>
+
+          <div id="question-area">
+            <div class="question" id="question-text"></div>
+            <div class="choices" id="choices-container"></div>
+          </div>
+
+          <div class="footer-actions">
+            <div style="display:flex;gap:8px;">
+              <button id="next-btn" class="btn primary">Next</button>
+              <button id="restart-btn" class="btn">Restart</button>
+              <button id="retry-wrong-btn" class="btn">Retry Wrong</button>
+            </div>
+            <div id="feedback" class="muted"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCORE / REVIEW -->
+      <section id="score-screen" style="display:none;">
+        <div class="card" style="text-align:center;">
+          <div class="muted">Quiz Complete</div>
+          <div style="margin-top:12px;">
+            <div class="score-big" id="score-number">0 / 0</div>
+            <div class="muted" id="score-percent">0%</div>
+          </div>
+          <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
+            <button id="review-btn" class="btn">Review All</button>
+            <button id="go-back-chapters-btn" class="btn">Chapters</button>
+            <button id="download-results" class="btn">Download Results</button>
+          </div>
+
+          <div id="review-list" style="margin-top:18px; display:none;"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+(async function(){
+  // Paths to try for JSON (works for web / Flutter assets)
+  const paths = ['assets/MCQ-Data.json', 'MCQ-Data.json'];
+
+  async function loadJSON() {
+    for (const p of paths) {
+      try {
+        const res = await fetch(p);
+        if (!res.ok) continue;
+        const json = await res.json();
+        return normalizeData(json);
+      } catch (e) { /* try next */ }
+    }
+    throw new Error('Could not load MCQ-Data.json. Put it next to index.html or in assets/');
+  }
+
+  // Normalize incoming JSON to structure: { "Section Name": { "Chapter Title": [questions...] } }
+  function normalizeData(json) {
+    // If json already in section->chapter format
+    if (json && typeof json === 'object' && !Array.isArray(json) && Object.keys(json).some(k => typeof json[k] === 'object')) {
+      // Heuristic: contains 'chapters' array?
+      if (json.chapters && Array.isArray(json.chapters)) {
+        // convert chapters[] -> single section
+        const out = { "Medical MCQ": {} };
+        json.chapters.forEach(ch => {
+          out["Medical MCQ"][ch.title || ('Chapter ' + (Object.keys(out["Medical MCQ"]).length+1))] = (ch.questions || []).map((q,i)=>({
+            question: q.question,
+            choices: q.options || q.choices || [],
+            answer: q.answer || q.correct || ''
+          }));
+        });
+        return out;
+      } else {
+        // assume it's already in section->chapter->questions
+        return json;
+      }
+    }
+    // fallback empty
+    return { "Medical MCQ": {} };
+  }
+
+  const mcq = await loadJSON();
+
+  // UI references
+  const sectionsList = document.getElementById('sections-list');
+  const chaptersList = document.getElementById('chapters-list');
+  const menuScreen = document.getElementById('menu-screen');
+  const chaptersScreen = document.getElementById('chapters-screen');
+  const quizScreen = document.getElementById('quiz-screen');
+  const scoreScreen = document.getElementById('score-screen');
+  const sectionTitle = document.getElementById('section-title');
+  const chapterNameEl = document.getElementById('chapter-name');
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  const questionText = document.getElementById('question-text');
+  const choicesContainer = document.getElementById('choices-container');
+  const nextBtn = document.getElementById('next-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const retryWrongBtn = document.getElementById('retry-wrong-btn');
+  const feedback = document.getElementById('feedback');
+  const scoreNumber = document.getElementById('score-number');
+  const scorePercent = document.getElementById('score-percent');
+  const reviewBtn = document.getElementById('review-btn');
+  const goBackChaptersBtn = document.getElementById('go-back-chapters-btn');
+  const reviewList = document.getElementById('review-list');
+  const downloadResults = document.getElementById('download-results');
+
+  // Theme toggle
+  const themeToggle = document.getElementById('theme-toggle');
+  themeToggle.addEventListener('change', ()=> {
+    document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+  });
+  document.getElementById('home-btn').addEventListener('click', ()=> showScreen('menu'));
+
+  // State
+  let currentSection = '';
+  let currentChapter = '';
+  let questions = []; // current chapter questions
+  let qIndex = 0;
+  let score = 0;
+  let wrongSet = new Set();
+  let lastAnswers = []; // store { selected, correct }
+
+  // Render sections
+  function renderSections() {
+    sectionsList.innerHTML = '';
+    for (const sectionName of Object.keys(mcq)) {
+      const btn = document.createElement('button');
+      btn.className = 'section-btn';
+      btn.textContent = sectionName;
+      btn.addEventListener('click', () => {
+        currentSection = sectionName;
+        renderChapters(sectionName);
+      });
+      sectionsList.appendChild(btn);
+    }
+  }
+
+  // Render chapters for a section
+  function renderChapters(section) {
+    sectionTitle.textContent = section;
+    chaptersList.innerHTML = '';
+    const chs = mcq[section];
+    for (const chName of Object.keys(chs)) {
+      const btn = document.createElement('button');
+      btn.className = 'chapter-btn';
+      btn.textContent = `${chName} — ${chs[chName].length} Qs`;
+      btn.addEventListener('click', () => {
+        startQuiz(section, chName);
+      });
+      chaptersList.appendChild(btn);
+    }
+    showScreen('chapters');
+  }
+
+  # truncated for brevity in this cell - will finish writing the file below
+
+  function startQuiz(section, chapter) {
+    currentSection = section;
+    currentChapter = chapter;
+    questions = mcq[section][chapter].map(q => ({
+      question: q.question || q.prompt || '',
+      choices: q.choices || q.options || [],
+      answer: (q.answer || '').toString().trim()
+    }));
+    // maintain natural order but clone
+    qIndex = 0; score = 0; wrongSet = new Set(); lastAnswers = [];
+    chapterNameEl.textContent = chapter;
+    updateProgress();
+    showScreen('quiz');
+    renderQuestion();
+  }
+
+  function updateProgress() {
+    const pct = Math.round(((qIndex) / Math.max(1, questions.length)) * 100);
+    progressBar.style.width = pct + '%';
+    progressText.textContent = pct + '%';
+  }
+
+  function renderQuestion() {
+    if (qIndex >= questions.length) return finishQuiz();
+    const q = questions[qIndex];
+    questionText.textContent = `${qIndex+1}. ${q.question}`;
+    choicesContainer.innerHTML = '';
+    q.choices.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.className = 'choice';
+      btn.textContent = choice;
+      btn.addEventListener('click', () => handleAnswer(choice, q.answer, btn));
+      choicesContainer.appendChild(btn);
+    });
+    feedback.textContent = '';
+    updateProgress();
+  }
+
+  function handleAnswer(choiceText, correctKey, btn) {
+    // prevent double click
+    if (btn.classList.contains('disabled')) return;
+    // disable choices
+    const all = choicesContainer.querySelectorAll('.choice');
+    all.forEach(b=> { b.classList.add('disabled'); b.disabled = true; });
+
+    // determine correctness: accept "A." prefixes or starting letter
+    const startsWithLetter = (str) => {
+      const m = str.trim().match(/^([A-Za-z])[\.\)]?\s*/);
+      return m ? m[1].toUpperCase() : null;
+    };
+    const selectedLetter = startsWithLetter(choiceText);
+    const correctLetter = (correctKey || '').toString().trim().toUpperCase();
+    const correctMatch = selectedLetter ? (selectedLetter === correctLetter) : (choiceText.trim().startsWith(correctLetter) || false);
+
+    if (correctMatch) {
+      btn.classList.add('correct');
+      feedback.textContent = 'Correct';
+      score++;
+      lastAnswers.push({q: questions[qIndex].question, selected: choiceText, correct: correctKey, ok:true});
+    } else {
+      btn.classList.add('wrong');
+      feedback.textContent = 'Incorrect';
+      // highlight correct button
+      all.forEach(b=>{
+        const sl = startsWithLetter(b.textContent);
+        if (sl && sl === correctLetter) b.classList.add('correct');
+        // also allow exact match if no letter
+        if (!sl && b.textContent.trim().startsWith(correctLetter)) b.classList.add('correct');
+      });
+      wrongSet.add(qIndex);
+      lastAnswers.push({q: questions[qIndex].question, selected: choiceText, correct: correctKey, ok:false});
+    }
+    // show next/restart buttons enabled
+    updateProgress();
+  }
+
+  nextBtn.addEventListener('click', ()=> {
+    qIndex++;
+    if (qIndex < questions.length) {
+      renderQuestion();
+    } else {
+      finishQuiz();
+    }
+  });
+
+  restartBtn.addEventListener('click', ()=> {
+    qIndex = 0; score = 0; wrongSet = new Set(); lastAnswers = [];
+    renderQuestion();
+  });
+
+  retryWrongBtn.addEventListener('click', ()=> {
+    if (wrongSet.size === 0) {
+      alert('No wrong questions to retry — great work!');
+      return;
+    }
+    // build new questions array of wrong ones only (preserve original order)
+    const wrongIndices = Array.from(wrongSet).sort((a,b)=>a-b);
+    questions = wrongIndices.map(i => questions[i]);
+    qIndex = 0; score = 0; wrongSet = new Set(); lastAnswers = [];
+    chapterNameEl.textContent = currentChapter + ' (Retry wrong)';
+    renderQuestion();
+  });
+
+  function finishQuiz() {
+    showScreen('score');
+    scoreNumber.textContent = `${score} / ${questions.length}`;
+    const pct = Math.round((score / Math.max(1, questions.length)) * 100);
+    scorePercent.textContent = `${pct}%`;
+    // prepare review list hidden by default
+    reviewList.innerHTML = '';
+    lastAnswers.forEach((a, idx) => {
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      const left = document.createElement('div');
+      left.style.flex='1';
+      left.innerHTML = `<div style="font-weight:700">${idx+1}. ${a.q}</div>
+                        <div class="muted">Your answer: ${escapeHtml(a.selected||'—')}</div>
+                        <div class="muted">Correct: ${escapeHtml(a.correct||'—')}</div>`;
+      const right = document.createElement('div');
+      right.style.minWidth='92px'; right.style.textAlign='right';
+      right.innerHTML = a.ok ? `<div style="color:var(--accent);font-weight:700">OK</div>` : `<div style="color:var(--danger);font-weight:700">WRONG</div>`;
+      item.appendChild(left); item.appendChild(right);
+      reviewList.appendChild(item);
+    });
+  }
+
+  // review controls
+  reviewBtn.addEventListener('click', ()=> {
+    reviewList.style.display = reviewList.style.display === 'none' ? 'block' : 'none';
+  });
+  goBackChaptersBtn.addEventListener('click', ()=> showScreen('chapters'));
+  downloadResults.addEventListener('click', ()=> {
+    const payload = { section: currentSection, chapter: currentChapter, score, total: questions.length, answers:lastAnswers };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `mcq_results_${slugify(currentChapter||'results')}.json`; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // small helpers
+  function showScreen(name){
+    menuScreen.style.display = name==='menu'?'' : 'none';
+    chaptersScreen.style.display = name==='chapters'?'' : 'none';
+    quizScreen.style.display = name==='quiz'?'' : 'none';
+    scoreScreen.style.display = name==='score'?'' : 'none';
+  }
+  function slugify(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,'-').replace(/[^\w\-]+/g,'').replace(/\-+/g,'-'); }
+  function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // initial render
+  renderSections();
+  showScreen('menu');
+
+})(); /* IIFE */
+</script>
+</body>
+</html>
